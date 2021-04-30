@@ -1,0 +1,17 @@
+{% extends 'blog/main.html' %}
+{% block content %}
+<br>
+<br>
+<br>
+<br>
+<form action="" method="POST">
+    {% csrf_token %}
+    {{form}}
+    <input type="submit" name="submit">
+</form>
+
+<br>
+<br>
+<br>
+<br>
+{% endblock %}
