@@ -1,7 +1,51 @@
 from django.shortcuts import render, redirect
 from .models import Category, Food
-from .forms import FoodForm
+from .forms import FoodForm,CreateUserForm
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth import authenticate, login, logout
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 # Create your views here.
+def registerPage(request):
+    if request.user.is_authenticated:
+        return redirect('home')
+    else:
+        form = CreateUserForm()
+        if request.method == "POST":
+            form = CreateUserForm(request.POST)
+            if form.is_valid():
+                form.save()
+                user = form.cleaned_data.get('username')
+                messages.success(request, 'Account was created successfully for ' + user)
+                return redirect('login_page')
+                # print(request.POST)
+    context = {'form':form}
+    return render(request,'blog/register.html',context)
+
+def loginPage(request):
+    if request.user.is_authenticated:
+        return redirect('home')
+    else:
+        if request.method == "POST":
+            username = request.POST.get('username')
+            password = request.POST.get('password')
+
+            user = authenticate(request, username=username, password=password)
+
+            if user is not None:
+                login(request, user)
+                return redirect('home')
+            else:
+                messages.info(request, 'Username or password is incorrect')
+                # return render(request,'blog/login.html')
+    context={}
+    return render(request,'blog/login.html',context)
+
+def logoutUser(request):
+    logout(request)
+    return redirect('login_page')
+
+@login_required(login_url='login_page')
 def home(request):
     category = request.GET.get('category')
     if category == None:
@@ -17,11 +61,13 @@ def home(request):
     }
     return render(request, 'blog/home.html', data)
 
+@login_required(login_url='login_page')
 def viewFood(request,pk):
     food = Food.objects.get(id=pk)
 
     return render(request, 'blog/food.html', {'food':food})
 
+@login_required(login_url='login_page')
 def addFood(request):
     categories = Category.objects.all()
     if request.method == 'POST':
@@ -49,6 +95,7 @@ def addFood(request):
     }
     return render(request, 'blog/add.html',context)
 
+@login_required(login_url='login_page')
 def updateRecipes(request,pk):
     food = Food.objects.get(id=pk)
     form = FoodForm(instance=food)
@@ -61,7 +108,7 @@ def updateRecipes(request,pk):
     context={'form':form}
     return render(request, 'blog/recipes_form.html',context)
 
-
+@login_required(login_url='login_page')
 def deleteRecipes(request,pk):
     food = Food.objects.get(id=pk)
     if request.method == "POST":
