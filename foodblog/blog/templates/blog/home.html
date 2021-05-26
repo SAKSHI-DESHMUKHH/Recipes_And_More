@@ -13,9 +13,10 @@
         <h3>{{ food.title }}</h3>
         <p>{{ food.short_description }}</p>
         <a href="{% url 'food' food.id %}" class="btn btn-outline-dark btn-sm m-1">View</a>
-        <a href="{% url 'update_recipes' food.id %}" class="btn btn-outline-dark btn-sm m-1">Update</a>
-        <a href="{% url 'delete_recipes' food.id %}" class="btn btn-outline-dark btn-sm m-1">Delete</a>
-      
+        <!-- {% if request.user.is_staff %} -->
+          <a href="{% url 'update_recipes' food.id %}" class="btn btn-outline-dark btn-sm m-1">Update</a>
+          <a href="{% url 'delete_recipes' food.id %}" class="btn btn-outline-dark btn-sm m-1">Delete</a>
+        <!-- {% endif %} -->
       
     </div>
     {% empty %}

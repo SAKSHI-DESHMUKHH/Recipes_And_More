@@ -5,38 +5,40 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from .decorators import unauthenticated_user, allowed_users, admin_only
+from django.contrib.auth.models import Group
 # Create your views here.
+@unauthenticated_user
 def registerPage(request):
-    if request.user.is_authenticated:
-        return redirect('home')
-    else:
-        form = CreateUserForm()
-        if request.method == "POST":
-            form = CreateUserForm(request.POST)
-            if form.is_valid():
-                form.save()
-                user = form.cleaned_data.get('username')
-                messages.success(request, 'Account was created successfully for ' + user)
-                return redirect('login_page')
+
+    form = CreateUserForm()
+    if request.method == "POST":
+        form = CreateUserForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            username = form.cleaned_data.get('username')
+            group = Group.objects.get(name="customer")
+            user.groups.add(group)
+            messages.success(request, 'Account was created successfully for ' + username)
+            return redirect('login_page')
                 # print(request.POST)
     context = {'form':form}
     return render(request,'blog/register.html',context)
 
+@unauthenticated_user
 def loginPage(request):
-    if request.user.is_authenticated:
-        return redirect('home')
-    else:
-        if request.method == "POST":
-            username = request.POST.get('username')
-            password = request.POST.get('password')
+    
+    if request.method == "POST":
+        username = request.POST.get('username')
+        password = request.POST.get('password')
 
-            user = authenticate(request, username=username, password=password)
+        user = authenticate(request, username=username, password=password)
 
-            if user is not None:
-                login(request, user)
-                return redirect('home')
-            else:
-                messages.info(request, 'Username or password is incorrect')
+        if user is not None:
+            login(request, user)
+            return redirect('home')
+        else:
+            messages.info(request, 'Username or password is incorrect')
                 # return render(request,'blog/login.html')
     context={}
     return render(request,'blog/login.html',context)
@@ -45,7 +47,12 @@ def logoutUser(request):
     logout(request)
     return redirect('login_page')
 
+def userPage(request):
+    context={}
+    return render(request,'blog/user.html',context)
+
 @login_required(login_url='login_page')
+@admin_only
 def home(request):
     category = request.GET.get('category')
     if category == None:
@@ -68,6 +75,7 @@ def viewFood(request,pk):
     return render(request, 'blog/food.html', {'food':food})
 
 @login_required(login_url='login_page')
+@allowed_users(allowed_roles=['admin'])
 def addFood(request):
     categories = Category.objects.all()
     if request.method == 'POST':
@@ -96,6 +104,7 @@ def addFood(request):
     return render(request, 'blog/add.html',context)
 
 @login_required(login_url='login_page')
+@allowed_users(allowed_roles=['admin'])
 def updateRecipes(request,pk):
     food = Food.objects.get(id=pk)
     form = FoodForm(instance=food)
@@ -109,6 +118,7 @@ def updateRecipes(request,pk):
     return render(request, 'blog/recipes_form.html',context)
 
 @login_required(login_url='login_page')
+@allowed_users(allowed_roles=['admin'])
 def deleteRecipes(request,pk):
     food = Food.objects.get(id=pk)
     if request.method == "POST":
